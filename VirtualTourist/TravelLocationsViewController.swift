@@ -12,19 +12,42 @@ import CoreData
 
 class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
     
-    // MARK: Variables/Constants
+    // MARK: VARIABLES/CONSTANTS
     
+    let defaults = UserDefaults.standard
     let delegate: AppDelegate = UIApplication.shared.delegate as! AppDelegate
+    
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
     
-    // MARK: Outlets
+    // MARK: OUTLETS
     
     @IBOutlet weak var mapView: MKMapView!
     
-    // MARK: Lifecycle methods
+    // MARK: LIFECYCLE METHODS
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Position the map's region how it was left in last session, or create User defaults to save for next time
+        
+        if let currentLatitude = defaults.value(forKey: "currentLatitude"), let currentLongitude = defaults.value(forKey: "currentLongitude"),
+           let latitudeDelta = defaults.value(forKey: "latitudeDelta"), let longitudeDelta = defaults.value(forKey: "longitudeDelta") {
+
+            let center = CLLocationCoordinate2DMake(currentLatitude as! CLLocationDegrees, currentLongitude as! CLLocationDegrees)
+            let span = MKCoordinateSpan(latitudeDelta: latitudeDelta as! CLLocationDegrees, longitudeDelta: longitudeDelta as! CLLocationDegrees)
+            let region = MKCoordinateRegionMake(center, span)
+            
+            mapView.region = region
+            mapView.showsPointsOfInterest = true
+            
+        } else {
+            defaults.set(mapView.region.center.latitude, forKey: "currentLatitude")
+            defaults.set(mapView.region.center.longitude, forKey: "currentLongitude")
+            defaults.set(mapView.region.span.latitudeDelta, forKey: "latitudeDelta")
+            defaults.set(mapView.region.span.longitudeDelta, forKey: "longitudeDelta")
+        }
+        
+        // Load all the saved pins
         
         loadPins()
         
@@ -35,7 +58,11 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         mapView.addGestureRecognizer(longPressGestureRecognizer!)
     }
     
-    // MARK: Private methods
+    override func viewWillAppear(_ animated: Bool) {
+        
+    }
+    
+    // MARK: PRIVATE METHODS
     
     func handleLongPressGesture(gesture: UIGestureRecognizer) {
         if gesture.state == UIGestureRecognizerState.began {
@@ -67,22 +94,33 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
                 annotation.coordinate = coord
                 mapView.addAnnotation(annotation)
             }
-            
         } catch  {
            fatalError("Error in loadPins method")
         }
     }
     
-    // MARK: Delegate methods
+    // MARK: DELEGATE METHODS
     
     // Animate the dropping of the pin
+    
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: "pin")
         annotationView.animatesDrop = true
         return annotationView
     }
     
-    // MARK: Extensions
+    // Save the users current view of the map in UserDefaults every time map is moved
+    
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        if let _ = defaults.value(forKey: "currentLatitude"), let _ = defaults.value(forKey: "currentLongitude"),
+           let _ = defaults.value(forKey: "latitudeDelta"), let _ = defaults.value(forKey: "longitudeDelta"){
+            
+            defaults.set(mapView.region.center.latitude, forKey: "currentLatitude")
+            defaults.set(mapView.region.center.longitude, forKey: "currentLongitude")
+            defaults.set(mapView.region.span.latitudeDelta, forKey: "latitudeDelta")
+            defaults.set(mapView.region.span.longitudeDelta, forKey: "longitudeDelta")
+        }
+    }
     
 }
 
