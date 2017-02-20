@@ -78,11 +78,11 @@
 		263EF8C71E56441A003E6AE9 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				263EF8B91E56440A003E6AE9 /* VirtualTourist.xcdatamodeld */,
 				260779AF1E58F2EF0029E696 /* Pin+CoreDataClass.swift */,
 				260779B01E58F2EF0029E696 /* Pin+CoreDataProperties.swift */,
 				260779B11E58F2EF0029E696 /* Photo+CoreDataClass.swift */,
 				260779B21E58F2EF0029E696 /* Photo+CoreDataProperties.swift */,
-				263EF8B91E56440A003E6AE9 /* VirtualTourist.xcdatamodeld */,
 			);
 			name = Model;
 			sourceTree = "<group>";
@@ -100,8 +100,6 @@
 			isa = PBXGroup;
 			children = (
 				263EF8B61E56440A003E6AE9 /* Main.storyboard */,
-				263EF8BE1E56440A003E6AE9 /* LaunchScreen.storyboard */,
-				263EF8BC1E56440A003E6AE9 /* Assets.xcassets */,
 			);
 			name = View;
 			sourceTree = "<group>";
@@ -110,6 +108,8 @@
 			isa = PBXGroup;
 			children = (
 				263EF8C11E56440A003E6AE9 /* Info.plist */,
+				263EF8BC1E56440A003E6AE9 /* Assets.xcassets */,
+				263EF8BE1E56440A003E6AE9 /* LaunchScreen.storyboard */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";

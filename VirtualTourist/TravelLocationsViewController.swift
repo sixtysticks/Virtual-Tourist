@@ -38,7 +38,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
             let region = MKCoordinateRegionMake(center, span)
             
             mapView.region = region
-            mapView.showsPointsOfInterest = true
             
         } else {
             defaults.set(mapView.region.center.latitude, forKey: "currentLatitude")
@@ -58,11 +57,8 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         mapView.addGestureRecognizer(longPressGestureRecognizer!)
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        
-    }
     
-    // MARK: PRIVATE METHODS
+    // MARK: CUSTOM METHODS
     
     func handleLongPressGesture(gesture: UIGestureRecognizer) {
         if gesture.state == UIGestureRecognizerState.began {
@@ -120,6 +116,21 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
             defaults.set(mapView.region.span.latitudeDelta, forKey: "latitudeDelta")
             defaults.set(mapView.region.span.longitudeDelta, forKey: "longitudeDelta")
         }
+    }
+    
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        
+        let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "photoAlbumVC") as! PhotoAlbumViewController
+        
+        // Send tapped annotation data to Photo View Controller
+        photoAlbumVC.annotationView = view
+        
+        // Change text for back link in Photo View Controller navigation
+        let backButton = UIBarButtonItem()
+        backButton.title = "Back"
+        navigationItem.backBarButtonItem = backButton
+        
+        self.navigationController?.pushViewController(photoAlbumVC, animated: true)
     }
     
 }
