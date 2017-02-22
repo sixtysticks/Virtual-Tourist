@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  TravelLocationsViewController.swift
 //  VirtualTourist
 //
 //  Created by David Gibbs on 16/02/2017.
