@@ -10,13 +10,16 @@ import Foundation
 
 class FlickrClient {
     
-    // MARK: Shared Instance
+    // MARK: SHARED INSTANCE
+    
     class func sharedInstance() -> FlickrClient {
         struct Singleton {
             static var sharedInstance = FlickrClient()
         }
         return Singleton.sharedInstance
     }
+    
+    // MARK: GET PHOTOS FROM FLICKR
     
     func getPhotosFromFlickr(params: [String: AnyObject], completionHandlerForGetPhotos: @escaping (_ result: [String: AnyObject]?, _ success: Bool, _ error: String?) -> Void) {
         
@@ -47,8 +50,6 @@ class FlickrClient {
             }
             
             self.parseJSON(data!, completionHandlerForJSON: completionHandlerForGetPhotos)
-            
-            print("DATA: \(data!)")
         
         }
         
@@ -57,7 +58,7 @@ class FlickrClient {
         
     }
     
-    // MARK: Parse JSON data
+    // MARK: PARSE JSON DATA
     
     private func parseJSON(_ data: Data, completionHandlerForJSON: (_ result: [String: AnyObject]?, _ success: Bool, _ error: String?) -> Void) {
         
@@ -71,6 +72,8 @@ class FlickrClient {
         }
         completionHandlerForJSON(parsedResult as? [String:AnyObject], true, nil)
     }
+    
+    // MARK: BUILD FLICKR URL
     
     private func buildFlickrURLFromParams(_ params: [String: AnyObject]) -> URL {
         
@@ -88,7 +91,10 @@ class FlickrClient {
         return components.url!
     }
     
-    private func displayError(_ error: String) {
+    // MARK: ERROR MESSAGE FUNCTION
+    
+    func displayError(_ error: String) {
         print("ERROR: \(error)")
     }
+    
 }

@@ -10,8 +10,6 @@ import Foundation
 
 struct Constants {
     
-    // MARK: FLICKR
-    
     struct FlickrAPI {
         static let Scheme = "https"
         static let Host = "api.flickr.com"
@@ -36,8 +34,14 @@ struct Constants {
         static let DisableJSONCallback = "1"
     }
     
-    // https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=8c14785ef917106b03f2f26449e0511e&lat=48.856614&lon=2.352222&extras=url_m&format=json&nojsoncallback=1
+    struct FlickrResponseKeys {
+        static let Status = "stat"
+        static let Photos = "photos"
+        static let Photo = "photo"
+    }
     
-
+    struct FlickrResponseValues {
+        static let OKStatus = "ok"
+    }
     
 }

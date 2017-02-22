@@ -82,12 +82,12 @@
 		263EF8C71E56441A003E6AE9 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				26BCDFD31E5CE16400E991FC /* Clients */,
 				263EF8B91E56440A003E6AE9 /* VirtualTourist.xcdatamodeld */,
 				260779AF1E58F2EF0029E696 /* Pin+CoreDataClass.swift */,
 				260779B01E58F2EF0029E696 /* Pin+CoreDataProperties.swift */,
 				260779B11E58F2EF0029E696 /* Photo+CoreDataClass.swift */,
 				260779B21E58F2EF0029E696 /* Photo+CoreDataProperties.swift */,
+				26BCDFD31E5CE16400E991FC /* Clients */,
 			);
 			name = Model;
 			sourceTree = "<group>";

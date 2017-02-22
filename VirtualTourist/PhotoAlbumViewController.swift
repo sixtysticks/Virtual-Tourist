@@ -30,6 +30,16 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         
         displayPinOnMap()
         
+        downloadPhotosFromflickr()
+        
+    }
+    
+    // MARK: CUSTOM METHODS
+    
+    func downloadPhotosFromflickr() {
+        
+        // Set parameters for requested Flickr API
+        
         let params: [String: AnyObject] = [
             Constants.FlickrParameterKeys.Method            :   Constants.FlickrParameterValues.SearchMethod as AnyObject,
             Constants.FlickrParameterKeys.APIKey            :   Constants.FlickrParameterValues.APIKey as AnyObject,
@@ -40,15 +50,29 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
             Constants.FlickrParameterKeys.NoJSONCallback    :   Constants.FlickrParameterValues.DisableJSONCallback as AnyObject
         ]
         
+        // Call Flickr API
+        
         FlickrClient.sharedInstance().getPhotosFromFlickr(params: params) { (result, success, error) in
             if success {
-                print("FINAL RESULT: \(result)")
+                print("FINAL RESULT: \(result!)")
+                
+                // GUARD: Did Flickr return a status error?
+                
+                guard let stat = result?["stat"] as? String, stat == Constants.FlickrResponseValues.OKStatus else {
+                    FlickrClient.sharedInstance().displayError("Flickr API returned an error. See error code and message in \(result)")
+                    return
+                }
+                
+                // GUARD: Check there are 'photos' and 'photo' keys
+                
+                guard let photos = result?["photos"] as? [String:Any], let _ = photos["photo"] else {
+                    FlickrClient.sharedInstance().displayError("Could not find the \(Constants.FlickrResponseKeys.Photo) or \(Constants.FlickrResponseKeys.Photos) keys.")
+                    return
+                }
+                
             }
         }
-        
     }
-    
-    // MARK: CUSTOM METHODS
     
     func displayPinOnMap() {
         
