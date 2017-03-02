@@ -135,6 +135,7 @@
                     </view>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                     <connections>
+                        <outlet property="collectionView" destination="MkO-8U-KvH" id="5sg-Q2-NQm"/>
                         <outlet property="flowLayout" destination="JNI-fY-XdR" id="Ex0-dv-moB"/>
                         <outlet property="mapView" destination="jg0-ne-mxR" id="Iis-PD-qZF"/>
                     </connections>

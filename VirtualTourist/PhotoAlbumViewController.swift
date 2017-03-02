@@ -17,16 +17,28 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     var annotationView = MKAnnotationView()
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
+    var flickrPhotosArray = [String]()
+    var pin = Pin()
+    
+    var fetchedResultsController : NSFetchedResultsController<NSFetchRequestResult>? {
+        didSet {
+            fetchedResultsController?.delegate = self.fetchedResultsController as! NSFetchedResultsControllerDelegate?
+            collectionView?.reloadData()
+        }
+    }
     
     // MARK: OUTLETS
     
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     // MARK: LIFECYCLE METHODS
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
         
         displayPinOnMap()
         
@@ -54,22 +66,29 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         
         FlickrClient.sharedInstance().getPhotosFromFlickr(params: params) { (result, success, error) in
             if success {
-                print("FINAL RESULT: \(result!)")
                 
                 // GUARD: Did Flickr return a status error?
                 
                 guard let stat = result?["stat"] as? String, stat == Constants.FlickrResponseValues.OKStatus else {
                     FlickrClient.sharedInstance().displayError("Flickr API returned an error. See error code and message in \(result)")
+                    print("ERROR IN GUARD FOR STAT")
                     return
                 }
                 
                 // GUARD: Check there are 'photos' and 'photo' keys
                 
-                guard let photos = result?["photos"] as? [String:Any], let _ = photos["photo"] else {
+                guard let photos = result?["photos"] as? [String:Any], let photoArray = photos["photo"] else {
                     FlickrClient.sharedInstance().displayError("Could not find the \(Constants.FlickrResponseKeys.Photo) or \(Constants.FlickrResponseKeys.Photos) keys.")
+                    print("ERROR IN GUARD FOR PHOTOS")
                     return
                 }
                 
+                
+                for photo in photoArray as! [AnyObject] {
+                    if let url = photo["url_m"] {
+                        self.flickrPhotosArray.append(url! as! String)
+                    }
+                }
             }
         }
     }
@@ -95,7 +114,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         
     }
     
-
     
     // MARK: DELEGATE METHODS
     
@@ -104,7 +122,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+//        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+        
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath)
+        
         return cell
     }
     
@@ -117,4 +139,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         flowLayout.minimumLineSpacing = space
         return CGSize(width: dimension, height: dimension)
     }
+    
 }
+
+
+

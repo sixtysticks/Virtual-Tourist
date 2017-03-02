@@ -2,7 +2,7 @@
 //  Photo+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by David Gibbs on 18/02/2017.
+//  Created by David Gibbs on 24/02/2017.
 //  Copyright © 2017 SixtySticks. All rights reserved.
 //
 
@@ -17,12 +17,9 @@ extension Photo {
     }
 
     @NSManaged public var hasDownloaded: Bool
-    @NSManaged public var height: Double
     @NSManaged public var id: String?
-    @NSManaged public var title: String?
     @NSManaged public var url: String?
-    @NSManaged public var width: Double
-    @NSManaged public var pin: NSSet?
+    @NSManaged public var pin: Pin //NSSet?
 
 }
 

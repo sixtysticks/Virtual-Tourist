@@ -15,7 +15,7 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
     // MARK: VARIABLES/CONSTANTS
     
     let defaults = UserDefaults.standard
-    let delegate: AppDelegate = UIApplication.shared.delegate as! AppDelegate
+    let stack = CoreDataStack(modelName: "VirtualTourist")
     
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
     
@@ -69,11 +69,15 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
             
-            let pin = Pin(context: delegate.persistentContainer.viewContext)
+            let pin = Pin(context: (stack?.context)!)
             pin.latitude = coord.latitude
             pin.longitude = coord.longitude
-            
-            delegate.saveContext()
+
+            do {
+                try stack?.saveContext()
+            } catch {
+                fatalError("Error in 'handleLongPressGesture' method")
+            }
             
         }
     }
@@ -82,16 +86,16 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
 
         do {
-            let savedPins = try delegate.persistentContainer.viewContext.fetch(request)
+            let savedPins = try stack?.context.fetch(request)
             
-            for pin in savedPins as [AnyObject] {
+            for pin in savedPins as! [AnyObject] {
                 let annotation = MKPointAnnotation()
                 let coord = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
                 annotation.coordinate = coord
                 mapView.addAnnotation(annotation)
             }
         } catch  {
-           fatalError("Error in loadPins method")
+           fatalError("Error in 'loadPins' method")
         }
     }
     

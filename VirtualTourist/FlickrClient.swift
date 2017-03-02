@@ -27,7 +27,7 @@ class FlickrClient {
         let request = URLRequest(url: buildFlickrURLFromParams(params))
         
         let task = session.dataTask(with: request) { (data, response, error) in
-            
+                        
             // GUARD: Was there an error?
             guard (error == nil) else {
                 self.displayError("There was an error with your request!")
@@ -48,7 +48,7 @@ class FlickrClient {
                 completionHandlerForGetPhotos(nil, false, error as! String?)
                 return
             }
-            
+                        
             self.parseJSON(data!, completionHandlerForJSON: completionHandlerForGetPhotos)
         
         }
