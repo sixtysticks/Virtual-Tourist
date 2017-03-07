@@ -21,7 +21,7 @@ class FlickrClient {
     
     // MARK: GET PHOTOS FROM FLICKR
     
-    func getPhotosFromFlickr(params: [String: AnyObject], completionHandlerForGetPhotos: @escaping (_ result: [String: AnyObject]?, _ success: Bool, _ error: String?) -> Void) {
+    func getPhotosFromFlickr(params: [String: AnyObject], completionHandlerForGetPhotos: @escaping (_ result: [String: AnyObject]?, _ success: Bool, _ error: NSError?) -> Void) {
         
         let session = URLSession.shared
         let request = URLRequest(url: buildFlickrURLFromParams(params))
@@ -31,21 +31,21 @@ class FlickrClient {
             // GUARD: Was there an error?
             guard (error == nil) else {
                 self.displayError("There was an error with your request!")
-                completionHandlerForGetPhotos(nil, false, error as! String?)
+                completionHandlerForGetPhotos(nil, false, error as NSError?)
                 return
             }
             
             // GUARD: Did we get a successful 2XX response?
             guard let statusCode = (response as? HTTPURLResponse)?.statusCode, statusCode >= 200 && statusCode <= 299 else {
                 self.displayError("We did not get a successful 2XX response!")
-                completionHandlerForGetPhotos(nil, false, error as! String?)
+                completionHandlerForGetPhotos(nil, false, error as NSError?)
                 return
             }
             
             // GUARD: Was there a successful request?
             guard (data != nil) else {
                 self.displayError("There was no data returned!")
-                completionHandlerForGetPhotos(nil, false, error as! String?)
+                completionHandlerForGetPhotos(nil, false, error as NSError?)
                 return
             }
                         
@@ -60,14 +60,14 @@ class FlickrClient {
     
     // MARK: PARSE JSON DATA
     
-    private func parseJSON(_ data: Data, completionHandlerForJSON: (_ result: [String: AnyObject]?, _ success: Bool, _ error: String?) -> Void) {
+    private func parseJSON(_ data: Data, completionHandlerForJSON: (_ result: [String: AnyObject]?, _ success: Bool, _ error: NSError?) -> Void) {
         
         let parsedResult: AnyObject!
         
         do {
             parsedResult = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject!
         } catch {
-            completionHandlerForJSON(nil, false, error as? String)
+            completionHandlerForJSON(nil, false, error as NSError?)
             return
         }
         completionHandlerForJSON(parsedResult as? [String:AnyObject], true, nil)
