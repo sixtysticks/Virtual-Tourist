@@ -10,45 +10,66 @@ import UIKit
 import MapKit
 import CoreData
 
-class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
+class PhotoAlbumViewController: UIViewController {
     
-    // MARK: VARIABLES/CONSTANTS
+    // MARK: CONSTANTS/VARIABLES
+    
+    let stack = CoreDataStack.sharedInstance()
     
     var annotationView = MKAnnotationView()
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
-    var flickrPhotosArray = [String]()
-    var pin = Pin()
+    var pin = Pin(context: CoreDataStack.sharedInstance().context)
     
-    var fetchedResultsController : NSFetchedResultsController<NSFetchRequestResult>? {
-        didSet {
-            fetchedResultsController?.delegate = self.fetchedResultsController as! NSFetchedResultsControllerDelegate?
-            collectionView?.reloadData()
-        }
-    }
+    
+    lazy var sharedContext: NSManagedObjectContext = {
+        return CoreDataStack.sharedInstance().context
+    }()
+    
+    lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
+        fr.predicate = NSPredicate(format: "pin == %@", self.pin)
+        
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+    }()
     
     // MARK: OUTLETS
     
-    @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
+    @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var newCollectionButton: UIBarButtonItem!
     
     // MARK: LIFECYCLE METHODS
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
-        
+        fetchedResultsController?.delegate = self
         displayPinOnMap()
         
-        downloadPhotosFromflickr()
+        newCollectionButton.isEnabled = false
         
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            fatalError("Error in 'viewDidLoad' method")
+        }
+        
+        // TODO: Check this photos object...
+        if pin.photos?.count == 0 {
+            downloadPhotosFromFlickr()
+        }
     }
     
     // MARK: CUSTOM METHODS
     
-    func downloadPhotosFromflickr() {
+    @IBAction func newCollectionButtonPressed(_ sender: UIBarButtonItem) {
+        // TODO: Add new collection functionality
+    }
+    
+    func downloadPhotosFromFlickr() {
         
         // Set parameters for requested Flickr API
         
@@ -65,6 +86,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         // Call Flickr API
         
         FlickrClient.sharedInstance().getPhotosFromFlickr(params: params) { (result, success, error) in
+            
             if success {
                 
                 // GUARD: Did Flickr return a status error?
@@ -83,11 +105,24 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
                     return
                 }
                 
-                
-                for photo in photoArray as! [AnyObject] {
-                    if let url = photo["url_m"] {
-                        self.flickrPhotosArray.append(url! as! String)
+                DispatchQueue.main.async {
+                    for photo in photoArray as! [AnyObject] {
+                        if let url = photo["url_m"] as? String {
+                            let photoEntity = Photo(context: self.sharedContext, pin: self.pin)
+                            photoEntity.hasDownloaded = false
+                            photoEntity.url = url
+                        }
                     }
+                    
+                    do {
+                        try self.stack.saveContext()
+                    } catch {
+                        fatalError("Error in 'getPhotosFromFlickr' method")
+                    }
+                    
+                    try? self.fetchedResultsController?.performFetch()
+                    self.collectionView?.reloadData()
+                    
                 }
             }
         }
@@ -114,21 +149,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         
     }
     
-    
-    // MARK: DELEGATE METHODS
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 24
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-//        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
-        
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath)
-        
-        return cell
-    }
+}
+
+// MARK: EXTENSIONS DELEGATE METHODS
+
+extension PhotoAlbumViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
@@ -142,5 +167,49 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     
 }
 
+extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewDataSource {
+    
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        if let frc = fetchedResultsController {
+            print("NUMBER OF SECTIONS: \((frc.sections?.count)!)")
+            return (frc.sections?.count)!
+        } else {
+            return 0
+        }
+    }
+    
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        if let frc = fetchedResultsController {
+            print("NUMBER OF ITEMS: \(frc.sections![section].numberOfObjects)")
+            return frc.sections![section].numberOfObjects
+        } else {
+            return 0
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath)
+        
+//        if !photo.hasDownloaded {
+            let photoUrl = URL(string: photo.url!)
+            let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
+            let photoImageView = UIImageView(image: photoImage!)
+            cell.backgroundColor = UIColor.red
+            cell.contentView.addSubview(photoImageView)
+            
+            photo.hasDownloaded = true
+//        }
+//        
+        return cell
+    }
+    
+}
+
+extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
+    
+}
 
 

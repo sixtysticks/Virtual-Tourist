@@ -35,7 +35,6 @@ struct Constants {
     }
     
     struct FlickrResponseKeys {
-        static let Status = "stat"
         static let Photos = "photos"
         static let Photo = "photo"
     }

@@ -10,8 +10,16 @@ import CoreData
 
 // MARK: - CoreDataStack
 
-struct CoreDataStack {
+class CoreDataStack {
     
+    // MARK: Shared Instance
+    class func sharedInstance() -> CoreDataStack {
+        struct Singleton {
+            static var sharedInstance = CoreDataStack(modelName: "VirtualTourist")
+        }
+        return Singleton.sharedInstance!
+    }
+
     // MARK: Properties
     
     private let model: NSManagedObjectModel

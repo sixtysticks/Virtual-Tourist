@@ -2,7 +2,7 @@
 //  Pin+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by David Gibbs on 18/02/2017.
+//  Created by David Gibbs on 06/03/2017.
 //  Copyright © 2017 SixtySticks. All rights reserved.
 //
 

@@ -9,7 +9,6 @@
 import Foundation
 import CoreData
 
-
 public class Photo: NSManagedObject {
     
     convenience init(context: NSManagedObjectContext, pin: Pin) {

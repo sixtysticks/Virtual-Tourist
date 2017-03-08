@@ -86,7 +86,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="Cell" id="pKc-lp-NRK">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="PhotoCell" id="pKc-lp-NRK">
                                                 <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
@@ -97,15 +97,19 @@
                                             </collectionViewCell>
                                         </cells>
                                         <connections>
-                                            <outlet property="dataSource" destination="lVl-Vq-MYH" id="7H6-QT-ugL"/>
-                                            <outlet property="delegate" destination="lVl-Vq-MYH" id="MMD-6S-gmM"/>
+                                            <outlet property="dataSource" destination="lVl-Vq-MYH" id="rCO-VE-2cs"/>
+                                            <outlet property="delegate" destination="lVl-Vq-MYH" id="soT-ex-ulU"/>
                                         </connections>
                                     </collectionView>
                                     <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="uyE-Gz-jeX">
                                         <rect key="frame" x="0.0" y="323" width="375" height="44"/>
                                         <items>
                                             <barButtonItem style="plain" systemItem="flexibleSpace" id="axS-mC-Nzh"/>
-                                            <barButtonItem title="New Collection" id="IRT-xz-hwp"/>
+                                            <barButtonItem title="New Collection" id="IRT-xz-hwp">
+                                                <connections>
+                                                    <action selector="newCollectionButtonPressed:" destination="lVl-Vq-MYH" id="2s7-Jr-6OJ"/>
+                                                </connections>
+                                            </barButtonItem>
                                             <barButtonItem style="plain" systemItem="flexibleSpace" id="Y3l-2f-S1o"/>
                                         </items>
                                     </toolbar>
@@ -138,6 +142,7 @@
                         <outlet property="collectionView" destination="MkO-8U-KvH" id="5sg-Q2-NQm"/>
                         <outlet property="flowLayout" destination="JNI-fY-XdR" id="Ex0-dv-moB"/>
                         <outlet property="mapView" destination="jg0-ne-mxR" id="Iis-PD-qZF"/>
+                        <outlet property="newCollectionButton" destination="IRT-xz-hwp" id="03i-34-7Po"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Xyv-mv-G2q" userLabel="First Responder" sceneMemberID="firstResponder"/>

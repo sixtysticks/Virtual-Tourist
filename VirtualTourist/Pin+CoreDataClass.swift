@@ -20,16 +20,4 @@ public class Pin: NSManagedObject {
         }
     }
     
-    var formattedDate: String {
-        get {
-            let formatter =  DateFormatter()
-            formatter.timeStyle = .none
-            formatter.dateStyle = .short
-            formatter.doesRelativeDateFormatting =  true
-            formatter.locale = Locale.current
-            
-            return formatter.string(from: creationDate as! Date)
-        }
-    }
-    
 }

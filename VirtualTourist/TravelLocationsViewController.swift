@@ -10,14 +10,25 @@ import UIKit
 import MapKit
 import CoreData
 
-class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
+class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     
-    // MARK: VARIABLES/CONSTANTS
+    // MARK: CONSTANTS/VARIABLES
     
     let defaults = UserDefaults.standard
-    let stack = CoreDataStack(modelName: "VirtualTourist")
+    let stack = CoreDataStack.sharedInstance()
     
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
+    
+    lazy var sharedContext: NSManagedObjectContext = {
+        return CoreDataStack.sharedInstance().context
+    }()
+    
+    lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
+        fr.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+        
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+    }()
     
     // MARK: OUTLETS
     
@@ -27,6 +38,8 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        fetchedResultsController?.delegate = self
         
         // Position the map's region how it was left in last session, or create User defaults to save for next time
         
@@ -69,33 +82,32 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
             
-            let pin = Pin(context: (stack?.context)!)
+            let pin = Pin(context: self.sharedContext)
             pin.latitude = coord.latitude
             pin.longitude = coord.longitude
 
             do {
-                try stack?.saveContext()
+                try stack.saveContext()
             } catch {
                 fatalError("Error in 'handleLongPressGesture' method")
             }
-            
         }
     }
     
     func loadPins() {
-        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
-
         do {
-            let savedPins = try stack?.context.fetch(request)
-            
-            for pin in savedPins as! [AnyObject] {
-                let annotation = MKPointAnnotation()
-                let coord = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                annotation.coordinate = coord
-                mapView.addAnnotation(annotation)
-            }
+            try fetchedResultsController?.performFetch()
         } catch  {
            fatalError("Error in 'loadPins' method")
+        }
+        
+        let savedPins = fetchedResultsController?.fetchedObjects
+        
+        for pin in (savedPins as? [Pin])! {
+            let annotation = MKPointAnnotation()
+            let coord = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+            annotation.coordinate = coord
+            mapView.addAnnotation(annotation)
         }
     }
     
@@ -127,9 +139,11 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "photoAlbumVC") as! PhotoAlbumViewController
         
         // Send tapped annotation data to Photo View Controller
+        
         photoAlbumVC.annotationView = view
         
         // Change text for back link in Photo View Controller navigation
+        
         let backButton = UIBarButtonItem()
         backButton.title = "Back"
         navigationItem.backBarButtonItem = backButton
