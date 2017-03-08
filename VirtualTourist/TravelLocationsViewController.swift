@@ -12,7 +12,7 @@ import CoreData
 
 class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     
-    // MARK: VARIABLES/CONSTANTS
+    // MARK: CONSTANTS/VARIABLES
     
     let defaults = UserDefaults.standard
     let stack = CoreDataStack.sharedInstance()
@@ -26,6 +26,7 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
     lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
         fr.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+        
         return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
     }()
     
@@ -108,7 +109,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
         }
-        
     }
     
     // MARK: DELEGATE METHODS
@@ -139,9 +139,11 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
         let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "photoAlbumVC") as! PhotoAlbumViewController
         
         // Send tapped annotation data to Photo View Controller
+        
         photoAlbumVC.annotationView = view
         
         // Change text for back link in Photo View Controller navigation
+        
         let backButton = UIBarButtonItem()
         backButton.title = "Back"
         navigationItem.backBarButtonItem = backButton

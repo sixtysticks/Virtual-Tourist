@@ -12,14 +12,15 @@ import CoreData
 
 class PhotoAlbumViewController: UIViewController {
     
-    // MARK: VARIABLES/CONSTANTS
+    // MARK: CONSTANTS/VARIABLES
+    
+    let stack = CoreDataStack.sharedInstance()
     
     var annotationView = MKAnnotationView()
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
-    var flickrPhotosArray = [Photo]()
     var pin = Pin(context: CoreDataStack.sharedInstance().context)
-    let stack = CoreDataStack.sharedInstance()
+    
     
     lazy var sharedContext: NSManagedObjectContext = {
         return CoreDataStack.sharedInstance().context
@@ -35,9 +36,9 @@ class PhotoAlbumViewController: UIViewController {
     
     // MARK: OUTLETS
     
-    @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
+    @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var newCollectionButton: UIBarButtonItem!
     
     // MARK: LIFECYCLE METHODS
@@ -45,30 +46,27 @@ class PhotoAlbumViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        fetchedResultsController?.delegate = self
         displayPinOnMap()
         
         newCollectionButton.isEnabled = false
         
-        fetchedResultsController?.delegate = self
-        
         do {
             try fetchedResultsController?.performFetch()
-        } catch let error {
-            print("ERROR in PhotoAlbumViewController:viewDidLoad: failed to fetch photos: \(error)")
+        } catch {
+            fatalError("Error in 'viewDidLoad' method")
         }
         
+        // TODO: Check this photos object...
         if pin.photos?.count == 0 {
             downloadPhotosFromFlickr()
         }
-        
     }
     
     // MARK: CUSTOM METHODS
     
-
-    
     @IBAction func newCollectionButtonPressed(_ sender: UIBarButtonItem) {
-        //
+        // TODO: Add new collection functionality
     }
     
     func downloadPhotosFromFlickr() {
@@ -113,19 +111,16 @@ class PhotoAlbumViewController: UIViewController {
                             let photoEntity = Photo(context: self.sharedContext, pin: self.pin)
                             photoEntity.hasDownloaded = false
                             photoEntity.url = url
-                            
-//                             self.flickrPhotosArray.append(photoEntity)
                         }
                     }
                     
                     do {
                         try self.stack.saveContext()
                     } catch {
-                        print("Error..")
+                        fatalError("Error in 'getPhotosFromFlickr' method")
                     }
                     
-                    try? self.stack.saveContext()
-                    
+                    try? self.fetchedResultsController?.performFetch()
                     self.collectionView?.reloadData()
                     
                 }
