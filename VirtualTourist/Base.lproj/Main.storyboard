@@ -97,8 +97,8 @@
                                             </collectionViewCell>
                                         </cells>
                                         <connections>
-                                            <outlet property="dataSource" destination="lVl-Vq-MYH" id="7H6-QT-ugL"/>
-                                            <outlet property="delegate" destination="lVl-Vq-MYH" id="MMD-6S-gmM"/>
+                                            <outlet property="dataSource" destination="lVl-Vq-MYH" id="rCO-VE-2cs"/>
+                                            <outlet property="delegate" destination="lVl-Vq-MYH" id="soT-ex-ulU"/>
                                         </connections>
                                     </collectionView>
                                     <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="uyE-Gz-jeX">

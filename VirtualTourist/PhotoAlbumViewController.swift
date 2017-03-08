@@ -10,7 +10,7 @@ import UIKit
 import MapKit
 import CoreData
 
-class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
+class PhotoAlbumViewController: UIViewController {
     
     // MARK: VARIABLES/CONSTANTS
     
@@ -18,23 +18,20 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
     var flickrPhotosArray = [Photo]()
-    var pin = Pin()
-    let stack = CoreDataStack(modelName: "VirtualTourist")
+    var pin = Pin(context: CoreDataStack.sharedInstance().context)
+    let stack = CoreDataStack.sharedInstance()
     
-    var fetchedResultsController : NSFetchedResultsController<NSFetchRequestResult>? {
-        didSet {
-            fetchedResultsController?.delegate = self.fetchedResultsController as! NSFetchedResultsControllerDelegate?
-            collectionView?.reloadData()
-        }
-    }
+    lazy var sharedContext: NSManagedObjectContext = {
+        return CoreDataStack.sharedInstance().context
+    }()
     
-//    var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult> {
-//        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
-//        let context = stack?.context
-//        let frc = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: context!, sectionNameKeyPath: nil, cacheName: nil)
-//        return frc
-//    }
+    lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
+        fr.predicate = NSPredicate(format: "pin == %@", self.pin)
+        
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+    }()
     
     // MARK: OUTLETS
     
@@ -47,17 +44,21 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     
     override func viewDidLoad() {
         super.viewDidLoad()
-    
+        
         displayPinOnMap()
         
         newCollectionButton.isEnabled = false
         
-        downloadPhotosFromFlickr()
+        fetchedResultsController?.delegate = self
         
         do {
             try fetchedResultsController?.performFetch()
-        } catch let e as NSError {
-            print("Error while trying to perform a search: \n\(e)\n\(fetchedResultsController)")
+        } catch let error {
+            print("ERROR in PhotoAlbumViewController:viewDidLoad: failed to fetch photos: \(error)")
+        }
+        
+        if pin.photos?.count == 0 {
+            downloadPhotosFromFlickr()
         }
         
     }
@@ -109,19 +110,25 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
                 DispatchQueue.main.async {
                     for photo in photoArray as! [AnyObject] {
                         if let url = photo["url_m"] as? String {
-                            let photoEntity = Photo(context: (self.stack?.context)!, pin: self.pin)
+                            let photoEntity = Photo(context: self.sharedContext, pin: self.pin)
                             photoEntity.hasDownloaded = false
                             photoEntity.url = url
                             
-                            //                        self.flickrPhotosArray.append(photoEntity)
+//                             self.flickrPhotosArray.append(photoEntity)
                         }
                     }
                     
-                    try? self.stack?.saveContext()
+                    do {
+                        try self.stack.saveContext()
+                    } catch {
+                        print("Error..")
+                    }
+                    
+                    try? self.stack.saveContext()
                     
                     self.collectionView?.reloadData()
+                    
                 }
-                
             }
         }
     }
@@ -147,33 +154,11 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
         
     }
     
-    
-    // MARK: DELEGATE METHODS
-    
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return flickrPhotosArray.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath)
-        
-        if !photo.hasDownloaded {
-            DispatchQueue.main.async {
-                let photoUrl = URL(string: photo.url!)
-                let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
-                let photoImageView = UIImageView(image: photoImage!)
-                
-                cell.contentView.addSubview(photoImageView)
-            }
-        }
-        
-        photo.hasDownloaded = true
-        
-        return cell
-    }
+}
+
+// MARK: EXTENSIONS DELEGATE METHODS
+
+extension PhotoAlbumViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
@@ -187,5 +172,49 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegateFlowLa
     
 }
 
+extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewDataSource {
+    
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        if let frc = fetchedResultsController {
+            print("NUMBER OF SECTIONS: \((frc.sections?.count)!)")
+            return (frc.sections?.count)!
+        } else {
+            return 0
+        }
+    }
+    
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        if let frc = fetchedResultsController {
+            print("NUMBER OF ITEMS: \(frc.sections![section].numberOfObjects)")
+            return frc.sections![section].numberOfObjects
+        } else {
+            return 0
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath)
+        
+//        if !photo.hasDownloaded {
+            let photoUrl = URL(string: photo.url!)
+            let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
+            let photoImageView = UIImageView(image: photoImage!)
+            cell.backgroundColor = UIColor.red
+            cell.contentView.addSubview(photoImageView)
+            
+            photo.hasDownloaded = true
+//        }
+//        
+        return cell
+    }
+    
+}
+
+extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
+    
+}
 
 
