@@ -18,16 +18,13 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
     let stack = CoreDataStack.sharedInstance()
     
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
-    
-    lazy var sharedContext: NSManagedObjectContext = {
-        return CoreDataStack.sharedInstance().context
-    }()
+    var pin = Pin(context: CoreDataStack.sharedInstance().context)
     
     lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
         fr.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
         
-        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.stack.context, sectionNameKeyPath: nil,cacheName: nil)
     }()
     
     // MARK: OUTLETS
@@ -82,12 +79,12 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
             
-            let pin = Pin(context: self.sharedContext)
+            let pin = Pin(context: self.stack.context)
             pin.latitude = coord.latitude
             pin.longitude = coord.longitude
 
             do {
-                try stack.saveContext()
+                try self.stack.saveContext()
             } catch {
                 fatalError("Error in 'handleLongPressGesture' method")
             }
@@ -109,6 +106,8 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
         }
+        
+        print("PINS: \(savedPins)")
     }
     
     // MARK: DELEGATE METHODS

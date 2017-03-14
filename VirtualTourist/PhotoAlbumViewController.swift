@@ -16,22 +16,19 @@ class PhotoAlbumViewController: UIViewController {
     
     let stack = CoreDataStack.sharedInstance()
     
+    let cellIdentifier = "PhotoCell"
+    
     var annotationView = MKAnnotationView()
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
     var pin = Pin(context: CoreDataStack.sharedInstance().context)
-    
-    
-    lazy var sharedContext: NSManagedObjectContext = {
-        return CoreDataStack.sharedInstance().context
-    }()
     
     lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
         fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
         fr.predicate = NSPredicate(format: "pin == %@", self.pin)
         
-        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.stack.context, sectionNameKeyPath: nil,cacheName: nil)
     }()
     
     // MARK: OUTLETS
@@ -47,9 +44,12 @@ class PhotoAlbumViewController: UIViewController {
         super.viewDidLoad()
         
         fetchedResultsController?.delegate = self
+        
         displayPinOnMap()
         
         newCollectionButton.isEnabled = false
+        
+        collectionView!.register(UINib(nibName: "PhotoCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: cellIdentifier)
         
         do {
             try fetchedResultsController?.performFetch()
@@ -60,6 +60,8 @@ class PhotoAlbumViewController: UIViewController {
         // TODO: Check this photos object...
         if pin.photos?.count == 0 {
             downloadPhotosFromFlickr()
+        } else {
+            print("HELLO!!!!!")
         }
     }
     
@@ -108,9 +110,10 @@ class PhotoAlbumViewController: UIViewController {
                 DispatchQueue.main.async {
                     for photo in photoArray as! [AnyObject] {
                         if let url = photo["url_m"] as? String {
-                            let photoEntity = Photo(context: self.sharedContext, pin: self.pin)
+                            let photoEntity = Photo(context: self.stack.context, pin: self.pin)
                             photoEntity.hasDownloaded = false
                             photoEntity.url = url
+                            photoEntity.photo = NSData(contentsOf: URL(string: url)!)
                         }
                     }
                     
@@ -122,7 +125,6 @@ class PhotoAlbumViewController: UIViewController {
                     
                     try? self.fetchedResultsController?.performFetch()
                     self.collectionView?.reloadData()
-                    
                 }
             }
         }
@@ -171,13 +173,11 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         if let frc = fetchedResultsController {
-            print("NUMBER OF SECTIONS: \((frc.sections?.count)!)")
             return (frc.sections?.count)!
         } else {
             return 0
         }
     }
-    
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if let frc = fetchedResultsController {
@@ -191,18 +191,27 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
         let photo = fetchedResultsController?.object(at: indexPath) as! Photo
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath)
         
-//        if !photo.hasDownloaded {
-            let photoUrl = URL(string: photo.url!)
-            let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
-            let photoImageView = UIImageView(image: photoImage!)
-            cell.backgroundColor = UIColor.red
-            cell.contentView.addSubview(photoImageView)
-            
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! PhotoCollectionViewCell
+        
+        if !photo.hasDownloaded {
+//            let photoUrl = URL(string: photo.url!)
+//            let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
+            cell.imageView.image = UIImage(data: photo.photo as! Data)
             photo.hasDownloaded = true
-//        }
-//        
+        } else {
+            print("collection view else")
+        }
+        
+        do {
+            try self.stack.saveContext()
+        } catch {
+            fatalError("Error in 'collection' method")
+        }
+        
+        try? self.fetchedResultsController?.performFetch()
+//        self.collectionView?.reloadData()
+
         return cell
     }
     
