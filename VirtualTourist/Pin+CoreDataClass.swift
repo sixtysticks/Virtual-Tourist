@@ -15,6 +15,8 @@ public class Pin: NSManagedObject {
         if let ent = NSEntityDescription.entity(forEntityName: "Pin", in: context) {
             self.init(entity: ent, insertInto: context)
             self.creationDate = Date() as NSDate?
+            self.page = 1
+            self.per_page = Constants.FlickrParameterValues.ResultsReturned
         } else {
             fatalError("Unable to find entity name")
         }

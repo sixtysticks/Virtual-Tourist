@@ -10,28 +10,25 @@ import UIKit
 import MapKit
 import CoreData
 
-class PhotoAlbumViewController: UIViewController {
+class PhotoAlbumViewController: UIViewController, NSFetchedResultsControllerDelegate {
     
     // MARK: CONSTANTS/VARIABLES
     
     let stack = CoreDataStack.sharedInstance()
     
+    let cellIdentifier = "PhotoCell"
+    
     var annotationView = MKAnnotationView()
     var annotationLatitude: Double = 0.0
     var annotationLongitude: Double = 0.0
-    var pin = Pin(context: CoreDataStack.sharedInstance().context)
-    
-    
-    lazy var sharedContext: NSManagedObjectContext = {
-        return CoreDataStack.sharedInstance().context
-    }()
+    var pin: Pin!
     
     lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
         fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
         fr.predicate = NSPredicate(format: "pin == %@", self.pin)
         
-        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil,cacheName: nil)
+        return NSFetchedResultsController(fetchRequest: fr, managedObjectContext: self.stack.context, sectionNameKeyPath: nil,cacheName: nil)
     }()
     
     // MARK: OUTLETS
@@ -47,9 +44,10 @@ class PhotoAlbumViewController: UIViewController {
         super.viewDidLoad()
         
         fetchedResultsController?.delegate = self
+        
         displayPinOnMap()
         
-        newCollectionButton.isEnabled = false
+        collectionView!.register(UINib(nibName: "PhotoCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: cellIdentifier)
         
         do {
             try fetchedResultsController?.performFetch()
@@ -57,19 +55,53 @@ class PhotoAlbumViewController: UIViewController {
             fatalError("Error in 'viewDidLoad' method")
         }
         
-        // TODO: Check this photos object...
         if pin.photos?.count == 0 {
             downloadPhotosFromFlickr()
+        } else {
+            try? self.fetchedResultsController?.performFetch()
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(true)
+        
+        do {
+            try stack.saveContext()
+        } catch {
+            fatalError("Context cannot be saved")
         }
     }
     
     // MARK: CUSTOM METHODS
     
     @IBAction func newCollectionButtonPressed(_ sender: UIBarButtonItem) {
-        // TODO: Add new collection functionality
+        
+        // Get the results form the next page of images for pin
+        self.pin.page = self.pin.page + 1
+        
+        for photo in (self.fetchedResultsController?.fetchedObjects)! {
+            self.stack.context.delete(photo as! NSManagedObject)
+        }
+        
+        do {
+            try self.stack.saveContext()
+        } catch {
+            fatalError("Context cannot be saved")
+        }
+        
+        downloadPhotosFromFlickr()
+        
+        try? self.fetchedResultsController?.performFetch()
+        
+        DispatchQueue.main.async {
+            self.collectionView?.reloadData()
+        }
+        
     }
     
     func downloadPhotosFromFlickr() {
+        
+        newCollectionButton.isEnabled = false
         
         // Set parameters for requested Flickr API
         
@@ -78,6 +110,8 @@ class PhotoAlbumViewController: UIViewController {
             Constants.FlickrParameterKeys.APIKey            :   Constants.FlickrParameterValues.APIKey as AnyObject,
             Constants.FlickrParameterKeys.Latitude          :   annotationLatitude as AnyObject,
             Constants.FlickrParameterKeys.Longitude         :   annotationLongitude as AnyObject,
+            Constants.FlickrParameterKeys.Page              :   self.pin.page as AnyObject,
+            Constants.FlickrParameterKeys.PerPage           :   Constants.FlickrParameterValues.ResultsReturned as AnyObject,
             Constants.FlickrParameterKeys.Extras            :   Constants.FlickrParameterValues.MediumURL as AnyObject,
             Constants.FlickrParameterKeys.Format            :   Constants.FlickrParameterValues.ResponseFormat as AnyObject,
             Constants.FlickrParameterKeys.NoJSONCallback    :   Constants.FlickrParameterValues.DisableJSONCallback as AnyObject
@@ -105,25 +139,24 @@ class PhotoAlbumViewController: UIViewController {
                     return
                 }
                 
-                DispatchQueue.main.async {
-                    for photo in photoArray as! [AnyObject] {
-                        if let url = photo["url_m"] as? String {
-                            let photoEntity = Photo(context: self.sharedContext, pin: self.pin)
-                            photoEntity.hasDownloaded = false
-                            photoEntity.url = url
-                        }
+                for photo in photoArray as! [AnyObject] {
+                    
+                    guard let _ = photo["url_m"] as? String, let _ = photo["id"] as? String else {
+                        FlickrClient.sharedInstance().displayError("Error trying to find the photo url and/or id")
+                        return
                     }
                     
-                    do {
-                        try self.stack.saveContext()
-                    } catch {
-                        fatalError("Error in 'getPhotosFromFlickr' method")
-                    }
-                    
-                    try? self.fetchedResultsController?.performFetch()
-                    self.collectionView?.reloadData()
-                    
+                    let _ = Photo(context: self.stack.context, pin: self.pin, dict: photo as! [String:AnyObject])
                 }
+                
+                try? self.fetchedResultsController?.performFetch()
+                
+                
+                DispatchQueue.main.async {
+                    self.collectionView?.reloadData()
+                    self.newCollectionButton.isEnabled =  true
+                }
+                
             }
         }
     }
@@ -162,6 +195,7 @@ extension PhotoAlbumViewController: UICollectionViewDelegateFlowLayout {
         
         flowLayout.minimumInteritemSpacing = space
         flowLayout.minimumLineSpacing = space
+        
         return CGSize(width: dimension, height: dimension)
     }
     
@@ -171,17 +205,14 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         if let frc = fetchedResultsController {
-            print("NUMBER OF SECTIONS: \((frc.sections?.count)!)")
             return (frc.sections?.count)!
         } else {
             return 0
         }
     }
     
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if let frc = fetchedResultsController {
-            print("NUMBER OF ITEMS: \(frc.sections![section].numberOfObjects)")
             return frc.sections![section].numberOfObjects
         } else {
             return 0
@@ -190,25 +221,45 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
-        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath)
+        let photo = self.fetchedResultsController?.object(at: indexPath) as! Photo
         
-//        if !photo.hasDownloaded {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: self.cellIdentifier, for: indexPath) as! PhotoCollectionViewCell
+        
+        if photo.image != nil {
+            cell.imageView.image = photo.image
+        } else {
             let photoUrl = URL(string: photo.url!)
             let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
-            let photoImageView = UIImageView(image: photoImage!)
-            cell.backgroundColor = UIColor.red
-            cell.contentView.addSubview(photoImageView)
-            
-            photo.hasDownloaded = true
-//        }
-//        
+            FlickrClient.Cache.imageCache.storeImage(photoImage!, withIdentifier: photo.id!)
+            cell.imageView.image = FlickrClient.Cache.imageCache.imageWithIdentifier(photo.id)
+        }
+        
         return cell
     }
     
-}
-
-extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! PhotoCollectionViewCell
+        
+        stack.context.delete(photo as NSManagedObject)
+        
+        do {
+            try stack.saveContext()
+        } catch {
+            fatalError("Context cannot be saved")
+        }
+        
+        cell.imageView.image = nil
+        
+        try? self.fetchedResultsController?.performFetch()
+        
+        DispatchQueue.main.async {
+            self.collectionView?.reloadData()
+        }
+        
+    }
     
 }
 

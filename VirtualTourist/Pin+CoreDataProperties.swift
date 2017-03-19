@@ -2,7 +2,7 @@
 //  Pin+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by David Gibbs on 06/03/2017.
+//  Created by David Gibbs on 18/03/2017.
 //  Copyright © 2017 SixtySticks. All rights reserved.
 //
 
@@ -19,6 +19,8 @@ extension Pin {
     @NSManaged public var creationDate: NSDate?
     @NSManaged public var latitude: Double
     @NSManaged public var longitude: Double
+    @NSManaged public var page: Int16
+    @NSManaged public var per_page: String?
     @NSManaged public var photos: NSSet?
 
 }
