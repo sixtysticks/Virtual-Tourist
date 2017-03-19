@@ -225,14 +225,19 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: self.cellIdentifier, for: indexPath) as! PhotoCollectionViewCell
         
+        cell.activityIndicator.startAnimating()
+        
         if photo.image != nil {
             cell.imageView.image = photo.image
         } else {
+            cell.activityIndicator.startAnimating()
             let photoUrl = URL(string: photo.url!)
             let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
             FlickrClient.Cache.imageCache.storeImage(photoImage!, withIdentifier: photo.id!)
             cell.imageView.image = FlickrClient.Cache.imageCache.imageWithIdentifier(photo.id)
         }
+        
+        cell.activityIndicator.stopAnimating()
         
         return cell
     }
