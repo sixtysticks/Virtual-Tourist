@@ -10,6 +10,10 @@ import Foundation
 
 class FlickrClient {
     
+    struct Cache {
+        static let imageCache = ImageCache()
+    }
+    
     // MARK: SHARED INSTANCE
     
     class func sharedInstance() -> FlickrClient {
@@ -54,8 +58,6 @@ class FlickrClient {
         }
         
         task.resume()
-        
-        
     }
     
     // MARK: PARSE JSON DATA

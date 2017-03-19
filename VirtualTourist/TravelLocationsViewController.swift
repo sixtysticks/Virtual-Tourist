@@ -18,7 +18,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
     let stack = CoreDataStack.sharedInstance()
     
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
-    var pin = Pin(context: CoreDataStack.sharedInstance().context)
     
     lazy var fetchedResultsController: NSFetchedResultsController<NSFetchRequestResult>? = {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
@@ -67,7 +66,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
         mapView.addGestureRecognizer(longPressGestureRecognizer!)
     }
     
-    
     // MARK: CUSTOM METHODS
     
     func handleLongPressGesture(gesture: UIGestureRecognizer) {
@@ -82,12 +80,13 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             let pin = Pin(context: self.stack.context)
             pin.latitude = coord.latitude
             pin.longitude = coord.longitude
-
+            
             do {
                 try self.stack.saveContext()
             } catch {
                 fatalError("Error in 'handleLongPressGesture' method")
             }
+            
         }
     }
     
@@ -106,8 +105,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
         }
-        
-        print("PINS: \(savedPins)")
     }
     
     // MARK: DELEGATE METHODS
@@ -137,18 +134,36 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
         
         let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "photoAlbumVC") as! PhotoAlbumViewController
         
-        // Send tapped annotation data to Photo View Controller
-        
         photoAlbumVC.annotationView = view
         
-        // Change text for back link in Photo View Controller navigation
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch  {
+            fatalError("Error in 'mapView:didSelect' method")
+        }
         
+        let savedPins = fetchedResultsController?.fetchedObjects
+        
+        let viewCoordLat = (view.annotation?.coordinate.latitude)! as Double
+        let viewCoordLong = (view.annotation?.coordinate.longitude)! as Double
+        
+        for pin in savedPins as! [Pin] {
+            
+            let precision = 0.00000000000001
+
+            if (fabs(viewCoordLat - pin.latitude) <= precision) && (fabs(viewCoordLong - pin.longitude) <= precision) {
+                // Send tapped annotation data to Photo View Controller
+                photoAlbumVC.pin = pin
+            }
+        }
+        
+        // Change text for back link in Photo View Controller navigation
         let backButton = UIBarButtonItem()
         backButton.title = "Back"
         navigationItem.backBarButtonItem = backButton
-        
+    
         self.navigationController?.pushViewController(photoAlbumVC, animated: true)
     }
-    
+
 }
 
