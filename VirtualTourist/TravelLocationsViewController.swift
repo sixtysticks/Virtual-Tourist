@@ -62,8 +62,10 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
         // Add gesture recognizer to map
         
         longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(TravelLocationsViewController.handleLongPressGesture(gesture:)))
-        longPressGestureRecognizer?.minimumPressDuration = 1.0
+        longPressGestureRecognizer?.minimumPressDuration = 0.5
         mapView.addGestureRecognizer(longPressGestureRecognizer!)
+        
+        
     }
     
     // MARK: CUSTOM METHODS
@@ -105,6 +107,7 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
         }
+        
     }
     
     // MARK: DELEGATE METHODS
@@ -136,6 +139,9 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
         
         photoAlbumVC.annotationView = view
         
+        // Review suggestion: Deselect pin after opening album so that the pin is again selectable after moving back to the map view
+        mapView.deselectAnnotation(view.annotation, animated: true)
+        
         do {
             try fetchedResultsController?.performFetch()
         } catch  {
@@ -164,6 +170,7 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate, NSFetc
     
         self.navigationController?.pushViewController(photoAlbumVC, animated: true)
     }
-
+    
+    
 }
 

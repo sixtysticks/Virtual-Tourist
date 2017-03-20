@@ -19,6 +19,7 @@ class PhotoCollectionViewCell: UICollectionViewCell {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        self.activityIndicator.hidesWhenStopped =  true
     }
 
 }

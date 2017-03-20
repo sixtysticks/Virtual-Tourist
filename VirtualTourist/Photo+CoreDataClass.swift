@@ -12,8 +12,6 @@ import CoreData
 
 public class Photo: NSManagedObject {
     
-    var imageCache = ImageCache()
-    
     convenience init(context: NSManagedObjectContext, pin: Pin, dict: [String:AnyObject]) {
         if let ent = NSEntityDescription.entity(forEntityName: "Photo", in: context) {
             self.init(entity: ent, insertInto: context)
@@ -28,12 +26,6 @@ public class Photo: NSManagedObject {
             }
         } else {
             fatalError("Unable to find entity name")
-        }
-    }
-    
-    var image: UIImage? {
-        get {
-            return FlickrClient.Cache.imageCache.imageWithIdentifier(self.id)
         }
     }
 

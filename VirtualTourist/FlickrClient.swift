@@ -10,10 +10,6 @@ import Foundation
 
 class FlickrClient {
     
-    struct Cache {
-        static let imageCache = ImageCache()
-    }
-    
     // MARK: SHARED INSTANCE
     
     class func sharedInstance() -> FlickrClient {

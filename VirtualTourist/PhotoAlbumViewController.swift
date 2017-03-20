@@ -146,6 +146,8 @@ class PhotoAlbumViewController: UIViewController, NSFetchedResultsControllerDele
                         return
                     }
                     
+                    // TODO: Review suggestion – The app crashes here with Core Data multithreading assertions enabled. That means that the app is not "thread safe". See previous review for details!
+                    
                     let _ = Photo(context: self.stack.context, pin: self.pin, dict: photo as! [String:AnyObject])
                 }
                 
@@ -219,25 +221,43 @@ extension PhotoAlbumViewController: UICollectionViewDelegate , UICollectionViewD
         }
     }
     
+    func downloadImage( imagePath:String, completionHandler: @escaping (_ imageData: Data?, _ errorString: String?) -> Void){
+        let session = URLSession.shared
+        let imgURL = NSURL(string: imagePath)
+        let request: NSURLRequest = NSURLRequest(url: imgURL! as URL)
+        
+        let task = session.dataTask(with: request as URLRequest) {data, response, downloadError in
+            
+            if downloadError != nil {
+                completionHandler(nil, "Could not download image \(imagePath)")
+            } else {
+                
+                completionHandler(data, nil)
+            }
+        }
+        
+        task.resume()
+    }
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
         let photo = self.fetchedResultsController?.object(at: indexPath) as! Photo
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: self.cellIdentifier, for: indexPath) as! PhotoCollectionViewCell
         
-        cell.activityIndicator.startAnimating()
-        
-        if photo.image != nil {
-            cell.imageView.image = photo.image
+        if photo.photo != nil {
+            cell.imageView.image = UIImage(data: photo.photo as! Data)
         } else {
-            cell.activityIndicator.startAnimating()
-            let photoUrl = URL(string: photo.url!)
-            let photoImage = try? UIImage(data: Data(contentsOf: photoUrl!))
-            FlickrClient.Cache.imageCache.storeImage(photoImage!, withIdentifier: photo.id!)
-            cell.imageView.image = FlickrClient.Cache.imageCache.imageWithIdentifier(photo.id)
+            cell.imageView.image = UIImage(named: "PhotoPlaceholder")
+            downloadImage(imagePath: photo.url!, completionHandler: { (data, error) in
+                if error == nil {
+                    DispatchQueue.main.async {
+                        cell.imageView.image = UIImage(data: data!)
+                        cell.activityIndicator.stopAnimating()
+                    }
+                }
+            })
         }
-        
-        cell.activityIndicator.stopAnimating()
         
         return cell
     }
